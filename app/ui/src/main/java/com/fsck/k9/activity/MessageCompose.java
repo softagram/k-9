@@ -49,8 +49,6 @@ import com.fsck.k9.DI;
 import com.fsck.k9.Identity;
 import com.fsck.k9.K9;
 import com.fsck.k9.Preferences;
-import com.fsck.k9.controller.MessageReference;
-import com.fsck.k9.ui.R;
 import com.fsck.k9.activity.MessageLoaderHelper.MessageLoaderCallbacks;
 import com.fsck.k9.activity.compose.AttachmentPresenter;
 import com.fsck.k9.activity.compose.AttachmentPresenter.AttachmentMvpView;
@@ -67,6 +65,7 @@ import com.fsck.k9.activity.compose.RecipientPresenter;
 import com.fsck.k9.activity.compose.SaveMessageTask;
 import com.fsck.k9.activity.misc.Attachment;
 import com.fsck.k9.autocrypt.AutocryptDraftStateHeaderParser;
+import com.fsck.k9.controller.MessageReference;
 import com.fsck.k9.controller.MessagingController;
 import com.fsck.k9.controller.MessagingListener;
 import com.fsck.k9.controller.SimpleMessagingListener;
@@ -100,6 +99,7 @@ import com.fsck.k9.message.SimpleMessageBuilder;
 import com.fsck.k9.message.SimpleMessageFormat;
 import com.fsck.k9.search.LocalSearch;
 import com.fsck.k9.ui.EolConvertingEditText;
+import com.fsck.k9.ui.R;
 import com.fsck.k9.ui.compose.QuotedMessageMvpView;
 import com.fsck.k9.ui.compose.QuotedMessagePresenter;
 import org.openintents.openpgp.OpenPgpApiManager;
@@ -655,7 +655,8 @@ public class MessageCompose extends K9Activity implements OnClickListener,
             return null;
         }
 
-        if (cryptoStatus.shouldUsePgpMessageBuilder()) {
+        boolean shouldUsePgpMessageBuilder = cryptoStatus.isOpenPgpConfigured();
+        if (shouldUsePgpMessageBuilder) {
             SendErrorState maybeSendErrorState = cryptoStatus.getSendErrorStateOrNull();
             if (maybeSendErrorState != null) {
                 recipientPresenter.showPgpSendError(maybeSendErrorState);
