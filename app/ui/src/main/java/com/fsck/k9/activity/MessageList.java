@@ -946,21 +946,6 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
         } else if (id == R.id.delete) {
             messageViewFragment.onDelete();
             return true;
-        } else if (id == R.id.reply) {
-            messageViewFragment.onReply();
-            return true;
-        } else if (id == R.id.reply_all) {
-            messageViewFragment.onReplyAll();
-            return true;
-        } else if (id == R.id.forward) {
-            messageViewFragment.onForward();
-            return true;
-        } else if (id == R.id.forward_as_attachment) {
-            messageViewFragment.onForwardAsAttachment();
-            return true;
-        } else if (id == R.id.share) {
-            messageViewFragment.onSendAlternate();
-            return true;
         } else if (id == R.id.toggle_unread) {
             messageViewFragment.onToggleRead();
             return true;
