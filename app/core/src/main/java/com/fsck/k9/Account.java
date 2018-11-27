@@ -2,10 +2,7 @@
 package com.fsck.k9;
 
 
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -16,30 +13,21 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 import android.content.Context;
-import android.net.Uri;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.fsck.k9.backend.api.SyncConfig.ExpungePolicy;
 import com.fsck.k9.helper.Utility;
 import com.fsck.k9.mail.Address;
-import com.fsck.k9.mail.Folder.FolderClass;
-import com.fsck.k9.mail.MailServerDirection;
 import com.fsck.k9.mail.MessagingException;
 import com.fsck.k9.mail.NetworkType;
 import com.fsck.k9.mail.filter.Base64;
-import com.fsck.k9.mail.ssl.LocalKeyStore;
 import com.fsck.k9.mail.store.StoreConfig;
 import com.fsck.k9.mailstore.LocalStore;
 import com.fsck.k9.mailstore.StorageManager;
 import com.fsck.k9.mailstore.StorageManager.StorageProvider;
 import com.fsck.k9.preferences.Storage;
 import com.fsck.k9.preferences.StorageEditor;
-import com.fsck.k9.search.ConditionsTreeNode;
-import com.fsck.k9.search.LocalSearch;
-import com.fsck.k9.search.SearchSpecification.Attribute;
-import com.fsck.k9.search.SearchSpecification.SearchCondition;
-import com.fsck.k9.search.SearchSpecification.SearchField;
 import org.jetbrains.annotations.NotNull;
 import timber.log.Timber;
 
@@ -477,112 +465,6 @@ public class Account implements BaseAccount, StoreConfig {
         }
     }
 
-    protected synchronized void delete(Preferences preferences) {
-        deleteCertificates();
-
-        // Get the list of account UUIDs
-        String[] uuids = preferences.getStorage().getString("accountUuids", "").split(",");
-
-        // Create a list of all account UUIDs excluding this account
-        List<String> newUuids = new ArrayList<>(uuids.length);
-        for (String uuid : uuids) {
-            if (!uuid.equals(accountUuid)) {
-                newUuids.add(uuid);
-            }
-        }
-
-        StorageEditor editor = preferences.getStorage().edit();
-
-        // Only change the 'accountUuids' value if this account's UUID was listed before
-        if (newUuids.size() < uuids.length) {
-            String accountUuids = Utility.combine(newUuids.toArray(), ',');
-            editor.putString("accountUuids", accountUuids);
-        }
-
-        editor.remove(accountUuid + ".storeUri");
-        editor.remove(accountUuid + ".transportUri");
-        editor.remove(accountUuid + ".description");
-        editor.remove(accountUuid + ".name");
-        editor.remove(accountUuid + ".email");
-        editor.remove(accountUuid + ".alwaysBcc");
-        editor.remove(accountUuid + ".automaticCheckIntervalMinutes");
-        editor.remove(accountUuid + ".pushPollOnConnect");
-        editor.remove(accountUuid + ".idleRefreshMinutes");
-        editor.remove(accountUuid + ".lastAutomaticCheckTime");
-        editor.remove(accountUuid + ".latestOldMessageSeenTime");
-        editor.remove(accountUuid + ".notifyNewMail");
-        editor.remove(accountUuid + ".notifySelfNewMail");
-        editor.remove(accountUuid + ".deletePolicy");
-        editor.remove(accountUuid + ".draftsFolderName");
-        editor.remove(accountUuid + ".sentFolderName");
-        editor.remove(accountUuid + ".trashFolderName");
-        editor.remove(accountUuid + ".archiveFolderName");
-        editor.remove(accountUuid + ".spamFolderName");
-        editor.remove(accountUuid + ".archiveFolderSelection");
-        editor.remove(accountUuid + ".draftsFolderSelection");
-        editor.remove(accountUuid + ".sentFolderSelection");
-        editor.remove(accountUuid + ".spamFolderSelection");
-        editor.remove(accountUuid + ".trashFolderSelection");
-        editor.remove(accountUuid + ".autoExpandFolderName");
-        editor.remove(accountUuid + ".accountNumber");
-        editor.remove(accountUuid + ".vibrate");
-        editor.remove(accountUuid + ".vibratePattern");
-        editor.remove(accountUuid + ".vibrateTimes");
-        editor.remove(accountUuid + ".ring");
-        editor.remove(accountUuid + ".ringtone");
-        editor.remove(accountUuid + ".folderDisplayMode");
-        editor.remove(accountUuid + ".folderSyncMode");
-        editor.remove(accountUuid + ".folderPushMode");
-        editor.remove(accountUuid + ".folderTargetMode");
-        editor.remove(accountUuid + ".signatureBeforeQuotedText");
-        editor.remove(accountUuid + ".expungePolicy");
-        editor.remove(accountUuid + ".syncRemoteDeletions");
-        editor.remove(accountUuid + ".maxPushFolders");
-        editor.remove(accountUuid + ".searchableFolders");
-        editor.remove(accountUuid + ".chipColor");
-        editor.remove(accountUuid + ".led");
-        editor.remove(accountUuid + ".ledColor");
-        editor.remove(accountUuid + ".goToUnreadMessageSearch");
-        editor.remove(accountUuid + ".subscribedFoldersOnly");
-        editor.remove(accountUuid + ".maximumPolledMessageAge");
-        editor.remove(accountUuid + ".maximumAutoDownloadMessageSize");
-        editor.remove(accountUuid + ".messageFormatAuto");
-        editor.remove(accountUuid + ".quoteStyle");
-        editor.remove(accountUuid + ".quotePrefix");
-        editor.remove(accountUuid + ".sortTypeEnum");
-        editor.remove(accountUuid + ".sortAscending");
-        editor.remove(accountUuid + ".showPicturesEnum");
-        editor.remove(accountUuid + ".replyAfterQuote");
-        editor.remove(accountUuid + ".stripSignature");
-        editor.remove(accountUuid + ".cryptoApp"); // this is no longer set, but cleans up legacy values
-        editor.remove(accountUuid + ".cryptoAutoSignature");
-        editor.remove(accountUuid + ".cryptoAutoEncrypt");
-        editor.remove(accountUuid + ".cryptoApp");
-        editor.remove(accountUuid + ".cryptoKey");
-        editor.remove(accountUuid + ".cryptoSupportSignOnly");
-        editor.remove(accountUuid + ".enabled");
-        editor.remove(accountUuid + ".markMessageAsReadOnView");
-        editor.remove(accountUuid + ".alwaysShowCcBcc");
-        editor.remove(accountUuid + ".allowRemoteSearch");
-        editor.remove(accountUuid + ".remoteSearchFullText");
-        editor.remove(accountUuid + ".remoteSearchNumResults");
-        editor.remove(accountUuid + ".uploadSentMessages");
-        editor.remove(accountUuid + ".defaultQuotedTextShown");
-        editor.remove(accountUuid + ".displayCount");
-        editor.remove(accountUuid + ".inboxFolderName");
-        editor.remove(accountUuid + ".localStorageProvider");
-        editor.remove(accountUuid + ".messageFormat");
-        editor.remove(accountUuid + ".messageReadReceipt");
-        editor.remove(accountUuid + ".notifyMailCheck");
-        for (NetworkType type : NetworkType.values()) {
-            editor.remove(accountUuid + ".useCompression." + type.name());
-        }
-        deleteIdentities(preferences.getStorage(), editor);
-        // TODO: Remove preference settings that may exist for individual
-        // folders in the account.
-        editor.commit();
-    }
-
     private static int findNewAccountNumber(List<Integer> accountNumbers) {
         int newAccountNumber = -1;
         Collections.sort(accountNumbers);
@@ -641,132 +523,8 @@ public class Account implements BaseAccount, StoreConfig {
         preferences.loadAccounts();
     }
 
-    public synchronized void save(Preferences preferences) {
-        StorageEditor editor = preferences.getStorage().edit();
-
-        if (!preferences.getStorage().getString("accountUuids", "").contains(accountUuid)) {
-            /*
-             * When the account is first created we assign it a unique account number. The
-             * account number will be unique to that account for the lifetime of the account.
-             * So, we get all the existing account numbers, sort them ascending, loop through
-             * the list and check if the number is greater than 1 + the previous number. If so
-             * we use the previous number + 1 as the account number. This refills gaps.
-             * accountNumber starts as -1 on a newly created account. It must be -1 for this
-             * algorithm to work.
-             *
-             * I bet there is a much smarter way to do this. Anyone like to suggest it?
-             */
-            List<Account> accounts = preferences.getAccounts();
-            int[] accountNumbers = new int[accounts.size()];
-            for (int i = 0; i < accounts.size(); i++) {
-                accountNumbers[i] = accounts.get(i).getAccountNumber();
-            }
-            Arrays.sort(accountNumbers);
-            for (int accountNumber : accountNumbers) {
-                if (accountNumber > this.accountNumber + 1) {
-                    break;
-                }
-                this.accountNumber = accountNumber;
-            }
-            accountNumber++;
-
-            String accountUuids = preferences.getStorage().getString("accountUuids", "");
-            accountUuids += (accountUuids.length() != 0 ? "," : "") + accountUuid;
-            editor.putString("accountUuids", accountUuids);
-        }
-
-        editor.putString(accountUuid + ".storeUri", Base64.encode(storeUri));
-        editor.putString(accountUuid + ".localStorageProvider", localStorageProviderId);
-        editor.putString(accountUuid + ".transportUri", Base64.encode(transportUri));
-        editor.putString(accountUuid + ".description", description);
-        editor.putString(accountUuid + ".alwaysBcc", alwaysBcc);
-        editor.putInt(accountUuid + ".automaticCheckIntervalMinutes", automaticCheckIntervalMinutes);
-        editor.putInt(accountUuid + ".idleRefreshMinutes", idleRefreshMinutes);
-        editor.putBoolean(accountUuid + ".pushPollOnConnect", pushPollOnConnect);
-        editor.putInt(accountUuid + ".displayCount", displayCount);
-        editor.putLong(accountUuid + ".latestOldMessageSeenTime", latestOldMessageSeenTime);
-        editor.putBoolean(accountUuid + ".notifyNewMail", notifyNewMail);
-        editor.putString(accountUuid + ".folderNotifyNewMailMode", folderNotifyNewMailMode.name());
-        editor.putBoolean(accountUuid + ".notifySelfNewMail", notifySelfNewMail);
-        editor.putBoolean(accountUuid + ".notifyContactsMailOnly", notifyContactsMailOnly);
-        editor.putBoolean(accountUuid + ".notifyMailCheck", notifySync);
-        editor.putInt(accountUuid + ".deletePolicy", deletePolicy.setting);
-        editor.putString(accountUuid + ".inboxFolderName", inboxFolder);
-        editor.putString(accountUuid + ".draftsFolderName", draftsFolder);
-        editor.putString(accountUuid + ".sentFolderName", sentFolder);
-        editor.putString(accountUuid + ".trashFolderName", trashFolder);
-        editor.putString(accountUuid + ".archiveFolderName", archiveFolder);
-        editor.putString(accountUuid + ".spamFolderName", spamFolder);
-        editor.putString(accountUuid + ".archiveFolderSelection", archiveFolderSelection.name());
-        editor.putString(accountUuid + ".draftsFolderSelection", draftsFolderSelection.name());
-        editor.putString(accountUuid + ".sentFolderSelection", sentFolderSelection.name());
-        editor.putString(accountUuid + ".spamFolderSelection", spamFolderSelection.name());
-        editor.putString(accountUuid + ".trashFolderSelection", trashFolderSelection.name());
-        editor.putString(accountUuid + ".autoExpandFolderName", autoExpandFolder);
-        editor.putInt(accountUuid + ".accountNumber", accountNumber);
-        editor.putString(accountUuid + ".sortTypeEnum", sortType.name());
-        editor.putBoolean(accountUuid + ".sortAscending", sortAscending.get(sortType));
-        editor.putString(accountUuid + ".showPicturesEnum", showPictures.name());
-        editor.putString(accountUuid + ".folderDisplayMode", folderDisplayMode.name());
-        editor.putString(accountUuid + ".folderSyncMode", folderSyncMode.name());
-        editor.putString(accountUuid + ".folderPushMode", folderPushMode.name());
-        editor.putString(accountUuid + ".folderTargetMode", folderTargetMode.name());
-        editor.putBoolean(accountUuid + ".signatureBeforeQuotedText", this.isSignatureBeforeQuotedText);
-        editor.putString(accountUuid + ".expungePolicy", expungePolicy.name());
-        editor.putBoolean(accountUuid + ".syncRemoteDeletions", syncRemoteDeletions);
-        editor.putInt(accountUuid + ".maxPushFolders", maxPushFolders);
-        editor.putString(accountUuid + ".searchableFolders", searchableFolders.name());
-        editor.putInt(accountUuid + ".chipColor", chipColor);
-        editor.putBoolean(accountUuid + ".goToUnreadMessageSearch", goToUnreadMessageSearch);
-        editor.putBoolean(accountUuid + ".subscribedFoldersOnly", subscribedFoldersOnly);
-        editor.putInt(accountUuid + ".maximumPolledMessageAge", maximumPolledMessageAge);
-        editor.putInt(accountUuid + ".maximumAutoDownloadMessageSize", maximumAutoDownloadMessageSize);
-        if (MessageFormat.AUTO.equals(messageFormat)) {
-            // saving MessageFormat.AUTO as is to the database will cause downgrades to crash on
-            // startup, so we save as MessageFormat.TEXT instead with a separate flag for auto.
-            editor.putString(accountUuid + ".messageFormat", Account.MessageFormat.TEXT.name());
-            messageFormatAuto = true;
-        } else {
-            editor.putString(accountUuid + ".messageFormat", messageFormat.name());
-            messageFormatAuto = false;
-        }
-        editor.putBoolean(accountUuid + ".messageFormatAuto", messageFormatAuto);
-        editor.putBoolean(accountUuid + ".messageReadReceipt", messageReadReceipt);
-        editor.putString(accountUuid + ".quoteStyle", quoteStyle.name());
-        editor.putString(accountUuid + ".quotePrefix", quotePrefix);
-        editor.putBoolean(accountUuid + ".defaultQuotedTextShown", defaultQuotedTextShown);
-        editor.putBoolean(accountUuid + ".replyAfterQuote", replyAfterQuote);
-        editor.putBoolean(accountUuid + ".stripSignature", stripSignature);
-        editor.putLong(accountUuid + ".cryptoKey", openPgpKey);
-        editor.putBoolean(accountUuid + ".openPgpHideSignOnly", openPgpHideSignOnly);
-        editor.putBoolean(accountUuid + ".openPgpEncryptSubject", openPgpEncryptSubject);
-        editor.putString(accountUuid + ".openPgpProvider", openPgpProvider);
-        editor.putBoolean(accountUuid + ".autocryptMutualMode", autocryptPreferEncryptMutual);
-        editor.putBoolean(accountUuid + ".allowRemoteSearch", allowRemoteSearch);
-        editor.putBoolean(accountUuid + ".remoteSearchFullText", remoteSearchFullText);
-        editor.putInt(accountUuid + ".remoteSearchNumResults", remoteSearchNumResults);
-        editor.putBoolean(accountUuid + ".enabled", isEnabled);
-        editor.putBoolean(accountUuid + ".markMessageAsReadOnView", markMessageAsReadOnView);
-        editor.putBoolean(accountUuid + ".alwaysShowCcBcc", alwaysShowCcBcc);
-
-        editor.putBoolean(accountUuid + ".vibrate", notificationSetting.isVibrateEnabled());
-        editor.putInt(accountUuid + ".vibratePattern", notificationSetting.getVibratePattern());
-        editor.putInt(accountUuid + ".vibrateTimes", notificationSetting.getVibrateTimes());
-        editor.putBoolean(accountUuid + ".ring", notificationSetting.isRingEnabled());
-        editor.putString(accountUuid + ".ringtone", notificationSetting.getRingtone());
-        editor.putBoolean(accountUuid + ".led", notificationSetting.isLedEnabled());
-        editor.putInt(accountUuid + ".ledColor", notificationSetting.getLedColor());
-
-        for (NetworkType type : NetworkType.values()) {
-            Boolean useCompression = compressionMap.get(type);
-            if (useCompression != null) {
-                editor.putBoolean(accountUuid + ".useCompression." + type, useCompression);
-            }
-        }
-        saveIdentities(preferences.getStorage(), editor);
-
-        editor.commit();
-
+    public synchronized void save() {
+        DI.get(AccountManager.class).save(this);
     }
 
     private void resetVisibleLimits() {
@@ -1097,6 +855,10 @@ public class Account implements BaseAccount, StoreConfig {
         return accountNumber;
     }
 
+    public synchronized void setAccountNumber(int accountNumber) {
+        this.accountNumber = accountNumber;
+    }
+
     public synchronized FolderMode getFolderDisplayMode() {
         return folderDisplayMode;
     }
@@ -1240,6 +1002,10 @@ public class Account implements BaseAccount, StoreConfig {
         return useCompression;
     }
 
+    public Map<NetworkType, Boolean> getCompressionMap() {
+        return Collections.unmodifiableMap(compressionMap);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (o instanceof Account) {
@@ -1294,40 +1060,6 @@ public class Account implements BaseAccount, StoreConfig {
         }
 
         return newIdentities;
-    }
-
-    private synchronized void deleteIdentities(Storage storage, StorageEditor editor) {
-        int ident = 0;
-        boolean gotOne;
-        do {
-            gotOne = false;
-            String email = storage.getString(accountUuid + "." + IDENTITY_EMAIL_KEY + "." + ident, null);
-            if (email != null) {
-                editor.remove(accountUuid + "." + IDENTITY_NAME_KEY + "." + ident);
-                editor.remove(accountUuid + "." + IDENTITY_EMAIL_KEY + "." + ident);
-                editor.remove(accountUuid + ".signatureUse." + ident);
-                editor.remove(accountUuid + ".signature." + ident);
-                editor.remove(accountUuid + "." + IDENTITY_DESCRIPTION_KEY + "." + ident);
-                editor.remove(accountUuid + ".replyTo." + ident);
-                gotOne = true;
-            }
-            ident++;
-        } while (gotOne);
-    }
-
-    private synchronized void saveIdentities(Storage storage, StorageEditor editor) {
-        deleteIdentities(storage, editor);
-        int ident = 0;
-
-        for (Identity identity : identities) {
-            editor.putString(accountUuid + "." + IDENTITY_NAME_KEY + "." + ident, identity.getName());
-            editor.putString(accountUuid + "." + IDENTITY_EMAIL_KEY + "." + ident, identity.getEmail());
-            editor.putBoolean(accountUuid + ".signatureUse." + ident, identity.getSignatureUse());
-            editor.putString(accountUuid + ".signature." + ident, identity.getSignature());
-            editor.putString(accountUuid + "." + IDENTITY_DESCRIPTION_KEY + "." + ident, identity.getDescription());
-            editor.putString(accountUuid + ".replyTo." + ident, identity.getReplyTo());
-            ident++;
-        }
     }
 
     public synchronized List<Identity> getIdentities() {
@@ -1417,7 +1149,7 @@ public class Account implements BaseAccount, StoreConfig {
         }
     }
 
-    public synchronized boolean goToUnreadMessageSearch() {
+    public synchronized boolean isGoToUnreadMessageSearch() {
         return goToUnreadMessageSearch;
     }
 
@@ -1425,7 +1157,7 @@ public class Account implements BaseAccount, StoreConfig {
         this.goToUnreadMessageSearch = goToUnreadMessageSearch;
     }
 
-    public synchronized boolean subscribedFoldersOnly() {
+    public synchronized boolean isSubscribedFoldersOnly() {
         return subscribedFoldersOnly;
     }
 
@@ -1591,7 +1323,7 @@ public class Account implements BaseAccount, StoreConfig {
         this.openPgpEncryptSubject = openPgpEncryptSubject;
     }
 
-    public boolean allowRemoteSearch() {
+    public boolean isAllowRemoteSearch() {
         return allowRemoteSearch;
     }
 
@@ -1623,7 +1355,7 @@ public class Account implements BaseAccount, StoreConfig {
         this.inboxFolder = name;
     }
 
-    public synchronized boolean syncRemoteDeletions() {
+    public synchronized boolean isSyncRemoteDeletions() {
         return syncRemoteDeletions;
     }
 
@@ -1685,170 +1417,4 @@ public class Account implements BaseAccount, StoreConfig {
         remoteSearchFullText = val;
     }
 
-    /**
-     * Modify the supplied {@link LocalSearch} instance to limit the search to displayable folders.
-     *
-     * <p>
-     * This method uses the current folder display mode to decide what folders to include/exclude.
-     * </p>
-     *
-     * @param search
-     *         The {@code LocalSearch} instance to modify.
-     *
-     * @see #getFolderDisplayMode()
-     */
-    public void limitToDisplayableFolders(LocalSearch search) {
-        final Account.FolderMode displayMode = getFolderDisplayMode();
-
-        switch (displayMode) {
-            case FIRST_CLASS: {
-                // Count messages in the INBOX and non-special first class folders
-                search.and(SearchField.DISPLAY_CLASS, FolderClass.FIRST_CLASS.name(),
-                        Attribute.EQUALS);
-                break;
-            }
-            case FIRST_AND_SECOND_CLASS: {
-                // Count messages in the INBOX and non-special first and second class folders
-                search.and(SearchField.DISPLAY_CLASS, FolderClass.FIRST_CLASS.name(),
-                        Attribute.EQUALS);
-
-                // TODO: Create a proper interface for creating arbitrary condition trees
-                SearchCondition searchCondition = new SearchCondition(SearchField.DISPLAY_CLASS,
-                        Attribute.EQUALS, FolderClass.SECOND_CLASS.name());
-                ConditionsTreeNode root = search.getConditions();
-                if (root.mRight != null) {
-                    root.mRight.or(searchCondition);
-                } else {
-                    search.or(searchCondition);
-                }
-                break;
-            }
-            case NOT_SECOND_CLASS: {
-                // Count messages in the INBOX and non-special non-second-class folders
-                search.and(SearchField.DISPLAY_CLASS, FolderClass.SECOND_CLASS.name(),
-                        Attribute.NOT_EQUALS);
-                break;
-            }
-            default:
-            case ALL: {
-                // Count messages in the INBOX and non-special folders
-                break;
-            }
-        }
-    }
-
-    /**
-     * Modify the supplied {@link LocalSearch} instance to exclude special folders.
-     *
-     * <p>
-     * Currently the following folders are excluded:
-     * <ul>
-     *   <li>Trash</li>
-     *   <li>Drafts</li>
-     *   <li>Spam</li>
-     *   <li>Outbox</li>
-     *   <li>Sent</li>
-     * </ul>
-     * The Inbox will always be included even if one of the special folders is configured to point
-     * to the Inbox.
-     * </p>
-     *
-     * @param search
-     *         The {@code LocalSearch} instance to modify.
-     */
-    public void excludeSpecialFolders(LocalSearch search) {
-        excludeSpecialFolder(search, getTrashFolder());
-        excludeSpecialFolder(search, getDraftsFolder());
-        excludeSpecialFolder(search, getSpamFolder());
-        excludeSpecialFolder(search, getOutboxFolder());
-        excludeSpecialFolder(search, getSentFolder());
-        search.or(new SearchCondition(SearchField.FOLDER, Attribute.EQUALS, getInboxFolder()));
-    }
-
-    /**
-     * Modify the supplied {@link LocalSearch} instance to exclude "unwanted" folders.
-     *
-     * <p>
-     * Currently the following folders are excluded:
-     * <ul>
-     *   <li>Trash</li>
-     *   <li>Spam</li>
-     *   <li>Outbox</li>
-     * </ul>
-     * The Inbox will always be included even if one of the special folders is configured to point
-     * to the Inbox.
-     * </p>
-     *
-     * @param search
-     *         The {@code LocalSearch} instance to modify.
-     */
-    public void excludeUnwantedFolders(LocalSearch search) {
-        excludeSpecialFolder(search, getTrashFolder());
-        excludeSpecialFolder(search, getSpamFolder());
-        excludeSpecialFolder(search, getOutboxFolder());
-        search.or(new SearchCondition(SearchField.FOLDER, Attribute.EQUALS, getInboxFolder()));
-    }
-
-    private void excludeSpecialFolder(LocalSearch search, String folderServerId) {
-        if (folderServerId != null) {
-            search.and(SearchField.FOLDER, folderServerId, Attribute.NOT_EQUALS);
-        }
-    }
-
-    /**
-     * Add a new certificate for the incoming or outgoing server to the local key store.
-     */
-    public void addCertificate(MailServerDirection direction, X509Certificate certificate) throws CertificateException {
-        Uri uri;
-        if (direction == MailServerDirection.INCOMING) {
-            uri = Uri.parse(getStoreUri());
-        } else {
-            uri = Uri.parse(getTransportUri());
-        }
-        LocalKeyStore localKeyStore = LocalKeyStore.getInstance();
-        localKeyStore.addCertificate(uri.getHost(), uri.getPort(), certificate);
-    }
-
-    /**
-     * Examine the existing settings for an account.  If the old host/port is different from the
-     * new host/port, then try and delete any (possibly non-existent) certificate stored for the
-     * old host/port.
-     */
-    public void deleteCertificate(String newHost, int newPort, MailServerDirection direction) {
-        Uri uri;
-        if (direction == MailServerDirection.INCOMING) {
-            uri = Uri.parse(getStoreUri());
-        } else {
-            uri = Uri.parse(getTransportUri());
-        }
-        String oldHost = uri.getHost();
-        int oldPort = uri.getPort();
-        if (oldPort == -1) {
-            // This occurs when a new account is created
-            return;
-        }
-        if (!newHost.equals(oldHost) || newPort != oldPort) {
-            LocalKeyStore localKeyStore = LocalKeyStore.getInstance();
-            localKeyStore.deleteCertificate(oldHost, oldPort);
-        }
-    }
-
-    /**
-     * Examine the settings for the account and attempt to delete (possibly non-existent)
-     * certificates for the incoming and outgoing servers.
-     */
-    private void deleteCertificates() {
-        LocalKeyStore localKeyStore = LocalKeyStore.getInstance();
-
-        String storeUri = getStoreUri();
-        if (storeUri != null) {
-            Uri uri = Uri.parse(storeUri);
-            localKeyStore.deleteCertificate(uri.getHost(), uri.getPort());
-        }
-        String transportUri = getTransportUri();
-        if (transportUri != null) {
-            Uri uri = Uri.parse(transportUri);
-            localKeyStore.deleteCertificate(uri.getHost(), uri.getPort());
-        }
-    }
 }
