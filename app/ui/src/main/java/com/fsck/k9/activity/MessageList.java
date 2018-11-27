@@ -1,6 +1,9 @@
 package com.fsck.k9.activity;
 
 
+import java.util.Collection;
+import java.util.List;
+
 import android.annotation.SuppressLint;
 import android.app.SearchManager;
 import android.arch.lifecycle.Observer;
@@ -11,6 +14,7 @@ import android.content.Intent;
 import android.content.IntentSender;
 import android.content.IntentSender.SendIntentException;
 import android.content.res.Configuration;
+import android.content.res.TypedArray;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -65,15 +69,9 @@ import com.fsck.k9.ui.messagelist.MessageListViewModelFactory;
 import com.fsck.k9.ui.messageview.MessageViewFragment;
 import com.fsck.k9.ui.messageview.MessageViewFragment.MessageViewFragmentListener;
 import com.fsck.k9.ui.settings.SettingsActivity;
-import com.fsck.k9.view.MessageHeader;
-import com.fsck.k9.view.MessageTitleView;
 import com.fsck.k9.view.ViewSwitcher;
 import com.fsck.k9.view.ViewSwitcher.OnSwitchCompleteListener;
 import com.mikepenz.materialdrawer.Drawer.OnDrawerListener;
-
-import java.util.Collection;
-import java.util.List;
-
 import de.cketti.library.changelog.ChangeLog;
 import timber.log.Timber;
 
@@ -172,8 +170,6 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
     private K9Drawer drawer;
     private FragmentTransaction openFolderTransaction;
     private View actionBarMessageList;
-    private View actionBarMessageView;
-    private MessageTitleView actionBarSubject;
     private TextView actionBarTitle;
     private TextView actionBarSubTitle;
     private Menu menu;
@@ -561,8 +557,6 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
 
         View customView = actionBar.getCustomView();
         actionBarMessageList = customView.findViewById(R.id.actionbar_message_list);
-        actionBarMessageView = customView.findViewById(R.id.actionbar_message_view);
-        actionBarSubject = customView.findViewById(R.id.message_title_view);
         actionBarTitle = customView.findViewById(R.id.actionbar_title_first);
         actionBarSubTitle = customView.findViewById(R.id.actionbar_title_sub);
         actionBarProgress = customView.findViewById(R.id.actionbar_progress);
@@ -946,21 +940,6 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
         } else if (id == R.id.delete) {
             messageViewFragment.onDelete();
             return true;
-        } else if (id == R.id.reply) {
-            messageViewFragment.onReply();
-            return true;
-        } else if (id == R.id.reply_all) {
-            messageViewFragment.onReplyAll();
-            return true;
-        } else if (id == R.id.forward) {
-            messageViewFragment.onForward();
-            return true;
-        } else if (id == R.id.forward_as_attachment) {
-            messageViewFragment.onForwardAsAttachment();
-            return true;
-        } else if (id == R.id.share) {
-            messageViewFragment.onSendAlternate();
-            return true;
         } else if (id == R.id.toggle_unread) {
             messageViewFragment.onToggleRead();
             return true;
@@ -1091,11 +1070,17 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
             }
 
             // Set title of menu item to toggle the read state of the currently displayed message
+            int[] drawableAttr;
             if (messageViewFragment.isMessageRead()) {
                 menu.findItem(R.id.toggle_unread).setTitle(R.string.mark_as_unread_action);
+                drawableAttr = new int[] { R.attr.iconActionMarkAsUnread };
             } else {
                 menu.findItem(R.id.toggle_unread).setTitle(R.string.mark_as_read_action);
+                drawableAttr = new int[] { R.attr.iconActionMarkAsRead };
             }
+            TypedArray ta = obtainStyledAttributes(drawableAttr);
+            menu.findItem(R.id.toggle_unread).setIcon(ta.getDrawable(0));
+            ta.recycle();
 
             // Jellybean has built-in long press selection support
             menu.findItem(R.id.select_text).setVisible(Build.VERSION.SDK_INT < 16);
@@ -1482,15 +1467,6 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
     }
 
     @Override
-    public void displayMessageSubject(String subject) {
-        if (displayMode == DisplayMode.MESSAGE_VIEW) {
-            actionBarSubject.setText(subject);
-        } else {
-            actionBarSubject.showSubjectInMessageHeader();
-        }
-    }
-
-    @Override
     public void showNextMessageOrReturn() {
         if (K9.messageViewReturnToList() || !showLogicalNextMessage()) {
             if (displayMode == DisplayMode.SPLIT_VIEW) {
@@ -1524,11 +1500,6 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
     @Override
     public void setProgress(boolean enable) {
         setProgressBarIndeterminateVisibility(enable);
-    }
-
-    @Override
-    public void messageHeaderViewAvailable(MessageHeader header) {
-        actionBarSubject.setMessageHeader(header);
     }
 
     private boolean showNextMessage() {
@@ -1618,24 +1589,15 @@ public class MessageList extends K9Activity implements MessageListFragmentListen
     }
 
     private void showDefaultTitleView() {
-        actionBarMessageView.setVisibility(View.GONE);
         actionBarMessageList.setVisibility(View.VISIBLE);
 
         if (messageListFragment != null) {
             messageListFragment.updateTitle();
         }
-
-        actionBarSubject.setMessageHeader(null);
     }
 
     private void showMessageTitleView() {
         actionBarMessageList.setVisibility(View.GONE);
-        actionBarMessageView.setVisibility(View.VISIBLE);
-
-        if (messageViewFragment != null) {
-            displayMessageSubject(null);
-            messageViewFragment.updateTitle();
-        }
     }
 
     @Override
